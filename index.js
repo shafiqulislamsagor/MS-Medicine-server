@@ -83,8 +83,18 @@ async function run() {
       console.log(id , role)
       const query = {_id : new ObjectId(id)}
       const update = { $set: {userRole: role}}
-      const updatedUser = await All_User.updateOne(query, update)
+      const result = await All_User.updateOne(query, update)
       res.status(200).send({message:'success'})
+    })
+    app.patch('/user/:id', async(req, res) => {
+      const id = req.params.id
+      const {status} = req.body
+      console.log(status)
+      console.log(id , status)
+      const query = {_id : new ObjectId(id)}
+      const update = { $set: {status: status}}
+      const result = await All_User.updateOne(query, update)
+      res.status(200).send(result)
     })
 
     // JWT emplementation 
