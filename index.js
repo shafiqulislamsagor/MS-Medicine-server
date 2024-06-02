@@ -45,10 +45,10 @@ const verifyToken = async (req, res, next) => {
 //   Mongodb server
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ms-creator.yqb9vtj.mongodb.net/?retryWrites=true&w=majority&appName=ms-creator`;
 
-console.log(uri)
+
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -77,21 +77,29 @@ async function run() {
         res.status(200).send(newUser);
     })
 
+    app.patch('/users/:id', async(req, res) => {
+      const id = req.params.id
+      const {role} = req.body
+      console.log(id , role)
+      const query = {_id : new ObjectId(id)}
+      const update = { $set: {userRole: role}}
+      const updatedUser = await All_User.updateOne(query, update)
+      res.status(200).send({message:'success'})
+    })
+
     // JWT emplementation 
     app.post('/jwt', async (req, res) => {
         const user = req.body
         const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
           expiresIn: '500d',
         })
-        res
-          .cookie('token', token, {
+        res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
           })
           .send({ success: true })
       })
-      // Logout
       app.get('/jwt-logout', async (req, res) => {
         try {
           res
@@ -101,7 +109,6 @@ async function run() {
               sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
             })
             .send({ success: true })
-          console.log('Logout successful')
         } catch (err) {
           res.status(500).send(err)
         }
