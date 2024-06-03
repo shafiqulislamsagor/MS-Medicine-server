@@ -104,6 +104,13 @@ async function run() {
       const products = await All_Products.find().toArray();
       res.status(200).send(products);
   })
+    app.get('/products/:email', async(req, res) => {
+      const email = req.params.email
+      console.log(email)
+      const quaryes = {'seller.email':email}
+      const products = await All_Products.find(quaryes).toArray();
+      res.status(200).send(products);
+  })
 
   app.post('/products', async(req, res) => {
     const product = req.body
