@@ -64,6 +64,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const All_User = client.db('SM-Medicine').collection('all-users');
+    const All_Products = client.db('SM-Medicine').collection('all-products');
 
     // All-users 
     app.get('/users',async(req, res) => {
@@ -96,6 +97,19 @@ async function run() {
       const result = await All_User.updateOne(query, update)
       res.status(200).send(result)
     })
+
+    // Product 
+
+    app.get('/products', async(req, res) => {
+      const products = await All_Products.find().toArray();
+      res.status(200).send(products);
+  })
+
+  app.post('/products', async(req, res) => {
+    const product = req.body
+    const newProduct = await All_Products.insertOne(product);
+    res.status(200).send(newProduct);
+  })
 
     // JWT emplementation 
     app.post('/jwt', async (req, res) => {
