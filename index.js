@@ -65,6 +65,7 @@ async function run() {
     await client.connect();
     const All_User = client.db('SM-Medicine').collection('all-users');
     const All_Products = client.db('SM-Medicine').collection('all-products');
+    const Buy_Products = client.db('SM-Medicine').collection('buy-products');
 
     // All-users 
     app.get('/users',async(req, res) => {
@@ -115,6 +116,19 @@ async function run() {
   app.post('/products', async(req, res) => {
     const product = req.body
     const newProduct = await All_Products.insertOne(product);
+    res.status(200).send(newProduct);
+  })
+
+  // buy products 
+
+  app.get('/buy-products', async(req, res) => {
+    const products = await Buy_Products.find().toArray();
+    res.status(200).send(products);
+  })
+
+  app.post('/buy-products', async(req, res) => {
+    const product = req.body
+    const newProduct = await Buy_Products.insertOne(product);
     res.status(200).send(newProduct);
   })
 
