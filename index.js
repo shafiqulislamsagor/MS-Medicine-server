@@ -139,6 +139,11 @@ async function run() {
     res.status(200).send(result)
   })
 
+  app.delete('/buy-product/delete',async(req, res) => {
+    const result = await Buy_Products.deleteMany({})
+    res.status(200).send(result)
+  })
+
     // JWT emplementation 
     app.post('/jwt', async (req, res) => {
         const user = req.body
