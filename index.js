@@ -149,6 +149,13 @@ async function run() {
       res.status(200).send(products);
     });
 
+    app.get("/payments-products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { transactionId: id  };
+      const products = await Payment_Products.find(query).toArray();
+      res.status(200).send(products);
+    });
+
     app.post("/payments-products", async (req, res) => {
       const product = req.body;
       const newProduct = await Payment_Products.insertOne(product);
