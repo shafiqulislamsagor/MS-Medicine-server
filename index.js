@@ -149,6 +149,13 @@ async function run() {
       res.status(200).send(products);
     });
 
+    app.get("/payment-see-seller/:email",async(req,res)=>{
+      const email = req.params.email;
+      const quaryes = { 'product.seller.email': email };
+      const products = await Payment_Products.find(quaryes).toArray();
+      res.status(200).send(products);
+    })
+
     app.get("/payments-products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { transactionId: id  };
