@@ -2,15 +2,14 @@ const express = require("express");
 const app = express();
 require("dotenv").config();
 const cors = require("cors");
-// const nodemailer = require('nodemailer')
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cookieParser = require("cookie-parser");
-// const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.STRIPE_KEY);
 const port = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: ["http://localhost:5173", "http://localhost:5174" , "https://sm-medicine.web.app"],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -43,7 +42,6 @@ app.get("/", (req, res) => {
 
 //   Mongodb server
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@ms-creator.yqb9vtj.mongodb.net/?retryWrites=true&w=majority&appName=ms-creator`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -104,6 +102,21 @@ async function run() {
       const products = await All_Products.find().toArray();
       res.status(200).send(products);
     });
+    app.get("/products-adrequest", async (req, res) => {
+      const quary = {ad:"requested"}
+      const products = await All_Products.find(quary).toArray();
+      res.status(200).send(products);
+    });
+    app.patch("/products-adrequest/:id", async (req, res) => {
+      const id = req.params.id;
+      const { toogleValue } = req.body; 
+      const value = toogleValue ? 'true' : 'false';
+      const query = { _id: new ObjectId(id) };
+      const update = { $set: { advirtise: value } };
+  
+      const result = await All_Products.updateOne(query, update);
+      res.status(200).send(result);
+    });
     app.get("/products/:email", async (req, res) => {
       const email = req.params.email;
       console.log(email);
@@ -158,6 +171,16 @@ async function run() {
       const products = await Payment_Products.find().toArray();
       res.status(200).send(products);
     });
+
+    app.patch('/payments-products/:id', async (req, res) => {
+      const id = req.params.id;
+      const { paid } = req.body;
+      // console.log(id,paid)
+      const query = { _id: new ObjectId(id) };
+      const update = { $set: { status: paid } };
+      const result = await Payment_Products.updateOne(query, update);
+      res.status(200).send(result);
+    })
 
     app.get("/payment-see-seller/:email",async(req,res)=>{
       const email = req.params.email;
