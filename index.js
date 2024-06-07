@@ -112,6 +112,16 @@ async function run() {
       res.status(200).send(products);
     });
 
+    app.patch("/products-request/:id", async (req, res) => {
+      const id = req.params.id;
+      const {ad} = req.body;
+      console.log(id, ad);
+      const query = { _id: new ObjectId(id) };
+      const update = { $set: { ad } };
+      const result = await All_Products.updateOne(query, update);
+      res.status(200).send(result);
+    })
+
     app.post("/products", async (req, res) => {
       const product = req.body;
       const newProduct = await All_Products.insertOne(product);
