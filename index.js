@@ -9,7 +9,11 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 const port = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174" , "https://sm-medicine.web.app"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://sm-medicine.web.app",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -58,6 +62,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const All_User = client.db("SM-Medicine").collection("all-users");
+    const All_Category = client.db("SM-Medicine").collection("all-category");
     const All_Products = client.db("SM-Medicine").collection("all-products");
     const Buy_Products = client.db("SM-Medicine").collection("buy-products");
     const Payment_Products = client
@@ -98,22 +103,39 @@ async function run() {
 
     // Product
 
+    app.get("/product-counts", async (req, res) => {
+      const productcount = await All_Products.countDocuments();
+      res.send({ productcount });
+    });
+
     app.get("/products", async (req, res) => {
-      const products = await All_Products.find().toArray();
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const products = await All_Products.find()
+        .skip((page - 1) * size)
+        .limit(size)
+        .toArray();
+      res.status(200).send(products);
+    });
+    app.get("/dynamic-banner", async (req, res) => {
+      const quary = {
+        advirtise: "true",
+      };
+      const products = await All_Products.find(quary).toArray();
       res.status(200).send(products);
     });
     app.get("/products-adrequest", async (req, res) => {
-      const quary = {ad:"requested"}
+      const quary = { ad: "requested" };
       const products = await All_Products.find(quary).toArray();
       res.status(200).send(products);
     });
     app.patch("/products-adrequest/:id", async (req, res) => {
       const id = req.params.id;
-      const { toogleValue } = req.body; 
-      const value = toogleValue ? 'true' : 'false';
+      const { toogleValue } = req.body;
+      const value = toogleValue ? "true" : "false";
       const query = { _id: new ObjectId(id) };
       const update = { $set: { advirtise: value } };
-  
+
       const result = await All_Products.updateOne(query, update);
       res.status(200).send(result);
     });
@@ -127,13 +149,13 @@ async function run() {
 
     app.patch("/products-request/:id", async (req, res) => {
       const id = req.params.id;
-      const {ad} = req.body;
+      const { ad } = req.body;
       console.log(id, ad);
       const query = { _id: new ObjectId(id) };
       const update = { $set: { ad } };
       const result = await All_Products.updateOne(query, update);
       res.status(200).send(result);
-    })
+    });
 
     app.post("/products", async (req, res) => {
       const product = req.body;
@@ -172,7 +194,7 @@ async function run() {
       res.status(200).send(products);
     });
 
-    app.patch('/payments-products/:id', async (req, res) => {
+    app.patch("/payments-products/:id", async (req, res) => {
       const id = req.params.id;
       const { paid } = req.body;
       // console.log(id,paid)
@@ -180,18 +202,18 @@ async function run() {
       const update = { $set: { status: paid } };
       const result = await Payment_Products.updateOne(query, update);
       res.status(200).send(result);
-    })
+    });
 
-    app.get("/payment-see-seller/:email",async(req,res)=>{
+    app.get("/payment-see-seller/:email", async (req, res) => {
       const email = req.params.email;
-      const quaryes = { 'product.seller.email': email };
+      const quaryes = { "product.seller.email": email };
       const products = await Payment_Products.find(quaryes).toArray();
       res.status(200).send(products);
-    })
+    });
 
     app.get("/payments-products/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { transactionId: id  };
+      const query = { transactionId: id };
       const products = await Payment_Products.find(query).toArray();
       res.status(200).send(products);
     });
@@ -201,12 +223,60 @@ async function run() {
       const newProduct = await Payment_Products.insertOne(product);
       res.status(200).send(newProduct);
     });
+    // Category
+    app.get("/category-all", async (req, res) => {
+      const category = await All_Category.find().toArray();
+      res.status(200).send(category);
+    });
+    app.post("/category-all", async (req, res) => {
+      const data = req.body;
+      const category = await All_Category.insertOne(data);
+      res.status(200).send(category);
+    });
+    app.delete("/category-all/:id", async (req, res) => {
+      const id = req.params.id;
+      const quary = { _id: new ObjectId(id) };
+      const category = await All_Category.deleteOne(quary);
+      res.status(200).send(category);
+    });
+    app.patch("/category-all/:id", async (req, res) => {
+      const id = req.params.id;
+      const {categoryProduct} = req.body;
+      const {name , img} = categoryProduct
+      console.log(categoryProduct);
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send({ error: "Invalid category ID" });
+      }
+
+      if (!name || !img) {
+        return res.status(400).send({ error: "Name and image are required" });
+      }
+
+      const query = { _id: new ObjectId(id) };
+      const update = { $set: { name, img } };
+
+      try {
+        const result = await All_Category.updateOne(query, update);
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: "Category not found" });
+        }
+        res
+          .status(200)
+          .send({ message: "Category updated successfully", result });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ error: "An error occurred while updating the category" });
+      }
+    });
 
     // Payment intent
     app.post("/create-payment", async (req, res) => {
       const price = req.body.price;
-      console.log(price)
-      const centConverted = parseFloat(price) * 100;
+      console.log(price);
+      const centConverted = parseInt(price) * 100;
       if (!price || centConverted < 1) {
         return res.status(400).send({ error: "Invalid price" });
       }
@@ -214,15 +284,14 @@ async function run() {
       try {
         // Generate clientSecret
         const { client_secret } = await stripe.paymentIntents.create({
-
           amount: centConverted,
           currency: "usd",
           automatic_payment_methods: {
             enabled: true,
           },
         });
-        console.log('hit')
-        console.log(client_secret)
+        console.log("hit");
+        console.log(client_secret);
 
         // Send client secret as response
         res.send({ clientSecret: client_secret });
