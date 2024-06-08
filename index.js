@@ -117,6 +117,13 @@ async function run() {
         .toArray();
       res.status(200).send(products);
     });
+    app.get('/category-all/:category', async (req, res) => {
+      const categorys = req.params.category;
+      console.log(categorys);
+      const quary = { category: categorys };
+      const result = await All_Products.find(quary).toArray();
+      res.status(200).send(result);
+    })
     app.get("/dynamic-banner", async (req, res) => {
       const quary = {
         advirtise: "true",
@@ -228,6 +235,7 @@ async function run() {
       const category = await All_Category.find().toArray();
       res.status(200).send(category);
     });
+    
     app.post("/category-all", async (req, res) => {
       const data = req.body;
       const category = await All_Category.insertOne(data);
@@ -243,33 +251,11 @@ async function run() {
       const id = req.params.id;
       const {categoryProduct} = req.body;
       const {name , img} = categoryProduct
-      console.log(categoryProduct);
-
-      if (!ObjectId.isValid(id)) {
-        return res.status(400).send({ error: "Invalid category ID" });
-      }
-
-      if (!name || !img) {
-        return res.status(400).send({ error: "Name and image are required" });
-      }
-
       const query = { _id: new ObjectId(id) };
       const update = { $set: { name, img } };
-
-      try {
-        const result = await All_Category.updateOne(query, update);
-        if (result.matchedCount === 0) {
-          return res.status(404).send({ error: "Category not found" });
-        }
-        res
-          .status(200)
-          .send({ message: "Category updated successfully", result });
-      } catch (error) {
-        console.error(error);
-        res
-          .status(500)
-          .send({ error: "An error occurred while updating the category" });
-      }
+      const result = await All_Category.updateOne(query, update);
+      res.status(200).send(result);
+       
     });
 
     // Payment intent
