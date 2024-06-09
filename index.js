@@ -117,6 +117,7 @@ async function run() {
         .toArray();
       res.status(200).send(products);
     });
+
     app.get('/category-all/:category', async (req, res) => {
       const categorys = req.params.category;
       console.log(categorys);
@@ -174,6 +175,12 @@ async function run() {
 
     app.get("/buy-products", async (req, res) => {
       const products = await Buy_Products.find().toArray();
+      res.status(200).send(products);
+    });
+    app.get("/buy-products/:email", async (req, res) => {
+      const email = req.params.email;
+      const quary = {"buyer.email":email}
+      const products = await Buy_Products.find(quary).toArray();
       res.status(200).send(products);
     });
 
