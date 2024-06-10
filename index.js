@@ -25,20 +25,21 @@ app.use(cookieParser());
 //   Maddleware requires
 // Verify Token Middleware
 const verifyToken = async (req, res, next) => {
-  const token = req.cookies?.token;
-  console.log(token);
-  if (!token) {
-    return res.status(401).send({ message: "unauthorized access" });
+  const token = await req.cookies?.token
+  if (!token) return res.status(401).send({ message: 'unauthenticated sss' })
+  if (token) {
+      jwt.verify(token, process.env.ACCESS_TOKEN, (error, success) => {
+          if (error) {
+              return res.status(401).send({ message: 'unauthenticated' })
+          }
+          req.user = success
+         
+      })
   }
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      console.log(err);
-      return res.status(401).send({ message: "unauthorized access" });
-    }
-    req.user = decoded;
-    next();
-  });
-};
+  next()
+}
+
+
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -60,7 +61,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const All_User = client.db("SM-Medicine").collection("all-users");
     const All_Category = client.db("SM-Medicine").collection("all-category");
     const All_Products = client.db("SM-Medicine").collection("all-products");
@@ -75,26 +76,41 @@ async function run() {
       res.status(200).send(users);
     });
 
+    app.get("/currentUser/:email",async(req,res)=>{
+      const email = req.params.email
+      const user = await All_User.findOne({email: email})
+      res.status(200).send(user)
+    })
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       const newUser = await All_User.insertOne(user);
       res.status(200).send(newUser);
     });
 
+    app.patch("/user-update/:email", async (req, res) => {
+      const email = req.params.email
+      const {username,img} = req.body
+      const query = { email: email };
+      const update = {$set:{img: img  , username: username}};
+      const result = await All_User.updateOne(query, update);
+      res.status(200).send(result);
+    })
+
     app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const { role } = req.body;
-      console.log(id, role);
+      // console.log(id, role);
       const query = { _id: new ObjectId(id) };
       const update = { $set: { userRole: role } };
       const result = await All_User.updateOne(query, update);
-      res.status(200).send({ message: "success" });
+      res.status(200).send(result);
     });
     app.patch("/user/:id", async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
-      console.log(status);
-      console.log(id, status);
+      // console.log(status);
+      // console.log(id, status);
       const query = { _id: new ObjectId(id) };
       const update = { $set: { status: status } };
       const result = await All_User.updateOne(query, update);
@@ -132,7 +148,7 @@ async function run() {
       const products = await All_Products.find(quary).toArray();
       res.status(200).send(products);
     });
-    app.get("/products-adrequest", async (req, res) => {
+    app.get("/products-adrequest",verifyToken , async (req, res) => {
       const quary = { ad: "requested" };
       const products = await All_Products.find(quary).toArray();
       res.status(200).send(products);
@@ -173,11 +189,11 @@ async function run() {
 
     // buy products
 
-    app.get("/buy-products", async (req, res) => {
+    app.get("/buy-products",verifyToken, async (req, res) => {
       const products = await Buy_Products.find().toArray();
       res.status(200).send(products);
     });
-    app.get("/buy-products/:email", async (req, res) => {
+    app.get("/buy-products/:email",verifyToken , async (req, res) => {
       const email = req.params.email;
       const quary = {"buyer.email":email}
       const products = await Buy_Products.find(quary).toArray();
@@ -203,8 +219,14 @@ async function run() {
     });
 
     // payment Products
-    app.get("/payments-products", async (req, res) => {
+    app.get("/payments-products",verifyToken , async (req, res) => {
       const products = await Payment_Products.find().toArray();
+      res.status(200).send(products);
+    });
+    app.get("/payments-user-product/:email",verifyToken , async (req, res) => {
+      const email = req.params.email;
+      const quary = { "buyer.email": email };
+      const products = await Payment_Products.find(quary).toArray();
       res.status(200).send(products);
     });
 
@@ -218,14 +240,14 @@ async function run() {
       res.status(200).send(result);
     });
 
-    app.get("/payment-see-seller/:email", async (req, res) => {
+    app.get("/payment-see-seller/:email",verifyToken , async (req, res) => {
       const email = req.params.email;
       const quaryes = { "product.seller.email": email };
       const products = await Payment_Products.find(quaryes).toArray();
       res.status(200).send(products);
     });
 
-    app.get("/payments-products/:id", async (req, res) => {
+    app.get("/payments-products/:id",verifyToken , async (req, res) => {
       const id = req.params.id;
       const query = { transactionId: id };
       const products = await Payment_Products.find(query).toArray();
@@ -254,7 +276,7 @@ async function run() {
       const category = await All_Category.deleteOne(quary);
       res.status(200).send(category);
     });
-    app.patch("/category-all/:id", async (req, res) => {
+    app.patch("/category-all/:id",verifyToken , async (req, res) => {
       const id = req.params.id;
       const {categoryProduct} = req.body;
       const {name , img} = categoryProduct
@@ -323,7 +345,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
